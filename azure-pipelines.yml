@@ -50,11 +50,11 @@ stages:
           - task: Maven@3
             displayName: Build with Maven
             inputs:
-              mavenPomFile: '$(Build.SourcesDirectory)/pom.xml'
+              mavenPomFile: 'pom.xml'
               mavenOptions: '-Xmx3072m'
               javaHomeOption: 'path'
               jdkVersionOption: '1.11'
-              jdkDirectory: 'C:\ProgramData\chocolatey\lib\openjdk11'
+              jdkDirectory: 'C:\Program Files\Eclipse Adoptium\jdk-11.0.20.101-hotspot'
               jdkArchitectureOption: 'x64'
               publishJUnitResults: true
               testResultsFiles: '**/surefire-reports/TEST-*.xml'
