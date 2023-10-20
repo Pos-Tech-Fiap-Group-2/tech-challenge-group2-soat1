@@ -98,7 +98,6 @@ stages:
                   displayName: Apply Secrets
                   inputs:
                     action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
                     namespace: tech-challenge-group2
                     manifests: |
                       $(Build.SourcesDirectory)/.k8s/00-secrets.yaml
@@ -106,7 +105,6 @@ stages:
                   displayName: Apply Persist Volume
                   inputs:
                     action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
                     namespace: tech-challenge-group2
                     manifests: |
                       $(Build.SourcesDirectory)/.k8s/01-persist-volume-db.yaml
@@ -115,7 +113,6 @@ stages:
                   displayName: Apply Configmap
                   inputs:
                     action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
                     namespace: tech-challenge-group2
                     manifests: |
                       $(Build.SourcesDirectory)/.k8s/03-configmap.yaml
@@ -124,7 +121,6 @@ stages:
                   displayName: Apply Service
                   inputs:
                     action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
                     namespace: tech-challenge-group2
                     manifests: |
                       $(Build.SourcesDirectory)/.k8s/05-service-db.yaml
@@ -134,7 +130,6 @@ stages:
                   displayName: Apply Deployment
                   inputs:
                     action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
                     namespace: tech-challenge-group2
                     manifests: |
                       $(Build.SourcesDirectory)/.k8s/08-deployment-db.yaml
@@ -143,7 +138,6 @@ stages:
                   displayName: Apply Autoscale
                   inputs:
                     action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
                     namespace: tech-challenge-group2
                     manifests: |
                       $(Build.SourcesDirectory)/.k8s/10-autoscale.yaml
