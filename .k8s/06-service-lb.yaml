@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tech-challenge-group2-soat1-svc-lb
+  namespace: 'tech-challenge-group2'
 spec:
   selector:
     app: tech-challenge-group2-soat1

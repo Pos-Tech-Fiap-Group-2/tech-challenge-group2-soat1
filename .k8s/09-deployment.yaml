@@ -6,6 +6,7 @@ spec:
   template:
     metadata:
       name: tech-challenge-group2
+      namespace: 'tech-challenge-group2'
       labels:
         app: tech-challenge-group2
     spec:
