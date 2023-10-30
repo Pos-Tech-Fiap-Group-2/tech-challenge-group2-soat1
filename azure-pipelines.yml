@@ -1,0 +1,161 @@
+parameters:
+  - name: containerRegistry
+    displayName: Container Registry
+    type: string
+    default: 'techchallengeacr.azurecr.io'
+
+trigger:
+  - main
+
+stages:
+  - stage: sPack
+    displayName: Pack k8s configuration
+    jobs:
+      - job: jPack
+        displayName: Pack k8s configuration
+        pool:
+          vmImage: ubuntu-latest
+          name: Local
+          steps:
+            - checkout: self
+            - task: CopyFiles@2
+              displayName: Copy k8s configuration
+              inputs:
+                SourceFolder: '$(Build.SourcesDirectory)'
+                Contents: '.k8s/*'
+                TargetFolder: '$(Build.ArtifactStagingDirectory)'
+                CleanTargetFolder: true
+                ignoreMakeDirErrors: true
+            - task: PublishBuildArtifacts@1
+              displayName: Publish k8s configuration
+              inputs:
+                targetPath: '$(Build.ArtifactStagingDirectory)'
+                ArtifactName: 'tech-challenge-group2'
+
+  - stage: sMain
+    displayName: Build & Deploy to Main
+    jobs:
+      - job: jBuildMain
+        displayName: Build and Push Docker image
+        pool:
+          vmImage: ubuntu-latest
+          name: Local
+        steps:
+          - checkout: self
+          - task: ReplaceTokens@3
+            displayName: Replace tokens in Dockerfile
+            inputs:
+              rootDirectory: '$(Build.SourcesDirectory)/.docker'
+              targetFiles: Dockerfile
+          - task: Maven@3
+            displayName: Build with Maven
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'path'
+              jdkVersionOption: '1.11'
+              jdkDirectory: 'C:\Program Files\Eclipse Adoptium\jdk-11.0.20.101-hotspot'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              goals: 'package'
+          - task: Docker@2
+            displayName: Login Docker
+            inputs:
+              containerRegistry: ${{ parameters.ContainerRegistry }}
+              command: login
+          - task: Docker@2
+            displayName: Build and Push Docker
+            inputs:
+              containerRegistry: '${{ parameters.ContainerRegistry }}'
+              repository: 'tech-challenger'
+              command: 'buildAndPush'
+              dockerfile: '$(Build.SourcesDirectory)/.docker/Dockerfile'
+              buildContext: '$(Build.SourcesDirectory)/'
+              tags: |
+                $(Build.BuildId)
+          - task: Docker@2
+            displayName: Logout Docker
+            inputs:
+              command: logout
+      - deployment: jDeployMain
+        displayName: Deploy to AKS
+        environment: Tech Challenger
+        dependsOn: jBuildMain
+        pool:
+          vmImage: ubuntu-latest
+          name: Local
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                - task: replacetokens@5
+                  inputs:
+                    rootDirectory: '$(Build.SourcesDirectory)/.k8s'
+                    targetFiles: |
+                      **/*.yml
+                      **/*.yaml
+                    encoding: 'auto'
+                    tokenPattern: 'azpipelines'
+                    writeBOM: true
+                    actionOnMissing: 'warn'
+                    keepToken: false
+                    actionOnNoFiles: 'continue'
+                    enableTransforms: false
+                    enableRecursion: false
+                    useLegacyPattern: false
+                    enableTelemetry: true
+                - task: Kubernetes@1
+                  displayName: Apply Secrets
+                  inputs:
+                    action: apply
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: tech-challenge-group2
+                    manifests: |
+                      $(Build.SourcesDirectory)/.k8s/00-secrets.yaml
+                - task: Kubernetes@1
+                  displayName: Apply Persist Volume
+                  inputs:
+                    action: apply
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: tech-challenge-group2
+                    manifests: |
+                      $(Build.SourcesDirectory)/.k8s/01-persist-volume-db.yaml
+                      $(Build.SourcesDirectory)/.k8s/02-persist-volume-claim.yaml
+                - task: Kubernetes@1
+                  displayName: Apply Configmap
+                  inputs:
+                    action: apply
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: tech-challenge-group2
+                    manifests: |
+                      $(Build.SourcesDirectory)/.k8s/03-configmap.yaml
+                      $(Build.SourcesDirectory)/.k8s/04-configmap-db.yaml
+                - task: Kubernetes@1
+                  displayName: Apply Service
+                  inputs:
+                    action: apply
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: tech-challenge-group2
+                    manifests: |
+                      $(Build.SourcesDirectory)/.k8s/05-service-db.yaml
+                      $(Build.SourcesDirectory)/.k8s/06-service-lb.yaml
+                      $(Build.SourcesDirectory)/.k8s/07-service-np.yaml
+                - task: Kubernetes@1
+                  displayName: Apply Deployment
+                  inputs:
+                    action: apply
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: tech-challenge-group2
+                    manifests: |
+                      $(Build.SourcesDirectory)/.k8s/08-deployment-db.yaml
+                      $(Build.SourcesDirectory)/.k8s/09-deployment.yaml
+                - task: Kubernetes@1
+                  displayName: Apply Autoscale
+                  inputs:
+                    action: apply
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: tech-challenge-group2
+                    manifests: |
+                      $(Build.SourcesDirectory)/.k8s/10-autoscale.yaml
