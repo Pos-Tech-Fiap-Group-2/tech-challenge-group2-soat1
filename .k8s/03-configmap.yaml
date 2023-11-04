@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tech-challenge-group2-configmap
+  namespace: 'tech-challenge-group2'
 data:
-  DB_HOST: tech-challenge-group2-db-svc
-  MP_NOTIFICATION_URL: https://webhook.site/820da4fd-08cc-446d-8f0d-d4b9f22738b9/pagamentos/mercadopago/notifications
+  DB_HOST: $(db_host)
+  MP_NOTIFICATION_URL: $(mp_notification_url)

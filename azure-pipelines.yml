@@ -30,7 +30,7 @@ stages:
               displayName: Publish k8s configuration
               inputs:
                 targetPath: '$(Build.ArtifactStagingDirectory)'
-                ArtifactName: 'tech-challenge-group2'
+                artifact: 'tech-challenge-group2'
 
   - stage: sMain
     displayName: Build & Deploy to Main
@@ -47,6 +47,7 @@ stages:
             inputs:
               rootDirectory: '$(Build.SourcesDirectory)/.docker'
               targetFiles: Dockerfile
+              tokenPattern: azpipelines
           - task: Maven@3
             displayName: Build with Maven
             inputs:
@@ -85,6 +86,8 @@ stages:
         pool:
           vmImage: ubuntu-latest
           name: Local
+        variables:
+          - group: TechChallenge
         strategy:
           runOnce:
             deploy:
@@ -109,53 +112,70 @@ stages:
                 - task: Kubernetes@1
                   displayName: Apply Secrets
                   inputs:
-                    action: apply
-                    kubernetesServiceEndpoint: 'TechChallengeAKS'
-                    namespace: tech-challenge-group2
-                    manifests: |
-                      $(Build.SourcesDirectory)/.k8s/00-secrets.yaml
+                      connectionType: 'Kubernetes Service Connection'
+                      kubernetesServiceEndpoint: 'TechChallengeAKS'
+                      namespace: 'tech-challenge-group2'
+                      command: 'apply'
+                      useConfigurationFile: true
+                      configuration: |
+                        $(Build.SourcesDirectory)/.k8s/00-secrets.yaml
                 - task: Kubernetes@1
-                  displayName: Apply Persist Volume
+                  displayName: Apply Persistent Volume
                   inputs:
-                    action: apply
+                    connectionType: 'Kubernetes Service Connection'
                     kubernetesServiceEndpoint: 'TechChallengeAKS'
-                    namespace: tech-challenge-group2
-                    manifests: |
-                      $(Build.SourcesDirectory)/.k8s/01-persist-volume-db.yaml
-                      $(Build.SourcesDirectory)/.k8s/02-persist-volume-claim.yaml
+                    namespace: 'tech-challenge-group2'
+                    command: 'apply'
+                    useConfigurationFile: true
+                    configuration: |
+                      $(Build.SourcesDirectory)/.k8s/02-persistent-volume-claim.yaml
                 - task: Kubernetes@1
                   displayName: Apply Configmap
                   inputs:
-                    action: apply
+                    connectionType: 'Kubernetes Service Connection'
                     kubernetesServiceEndpoint: 'TechChallengeAKS'
-                    namespace: tech-challenge-group2
-                    manifests: |
+                    namespace: 'tech-challenge-group2'
+                    command: 'apply'
+                    useConfigurationFile: true
+                    configuration: |
                       $(Build.SourcesDirectory)/.k8s/03-configmap.yaml
-                      $(Build.SourcesDirectory)/.k8s/04-configmap-db.yaml
                 - task: Kubernetes@1
-                  displayName: Apply Service
+                  displayName: Apply Service NP
                   inputs:
-                    action: apply
+                    connectionType: 'Kubernetes Service Connection'
                     kubernetesServiceEndpoint: 'TechChallengeAKS'
-                    namespace: tech-challenge-group2
-                    manifests: |
-                      $(Build.SourcesDirectory)/.k8s/05-service-db.yaml
-                      $(Build.SourcesDirectory)/.k8s/06-service-lb.yaml
+                    namespace: 'tech-challenge-group2'
+                    command: 'apply'
+                    useConfigurationFile: true
+                    configuration: |
                       $(Build.SourcesDirectory)/.k8s/07-service-np.yaml
+                - task: Kubernetes@1
+                  displayName: Apply Service LB
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: 'TechChallengeAKS'
+                    namespace: 'tech-challenge-group2'
+                    command: 'apply'
+                    useConfigurationFile: true
+                    configuration: |
+                      $(Build.SourcesDirectory)/.k8s/06-service-lb.yaml
                 - task: Kubernetes@1
                   displayName: Apply Deployment
                   inputs:
-                    action: apply
+                    connectionType: 'Kubernetes Service Connection'
                     kubernetesServiceEndpoint: 'TechChallengeAKS'
-                    namespace: tech-challenge-group2
-                    manifests: |
-                      $(Build.SourcesDirectory)/.k8s/08-deployment-db.yaml
+                    namespace: 'tech-challenge-group2'
+                    command: 'apply'
+                    useConfigurationFile: true
+                    configuration: |
                       $(Build.SourcesDirectory)/.k8s/09-deployment.yaml
                 - task: Kubernetes@1
                   displayName: Apply Autoscale
                   inputs:
-                    action: apply
+                    connectionType: 'Kubernetes Service Connection'
                     kubernetesServiceEndpoint: 'TechChallengeAKS'
-                    namespace: tech-challenge-group2
-                    manifests: |
+                    namespace: 'tech-challenge-group2'
+                    command: 'apply'
+                    useConfigurationFile: true
+                    configuration: |
                       $(Build.SourcesDirectory)/.k8s/10-autoscale.yaml
